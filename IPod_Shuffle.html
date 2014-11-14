@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <title>IPod Shuffle</title>
+    <meta charset="utf-8">
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+		
+		#AnimationGround {
+			height:200px;
+			width:200px;
+		}
+    </style>
+
+</head>
+
+<div id="webgl-container">
+</div>
+<div id="gui-container" style="position:absolute;z-index:1;top:0;left:0">
+</div>
+
+<body>
+
+
+<div id="AnimationGround"> 
+    <script type="text/javascript" src="js/three.js"></script>
+    <script type="text/javascript" src="js/OrbitControls.js"></script>
+    <script type="text/javascript" src="js/ColladaLoader.js"></script>
+    <script type="text/javascript" src="js/dat.gui.js"></script>
+    <script type="text/javascript">
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 0.1, 1000);
+        var renderer = new THREE.WebGLRenderer();
+
+        renderer.setClearColor(0xeeeeee, 1.0);
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        var webglContainer = document.getElementById('webgl-container');
+        webglContainer.appendChild(renderer.domElement);
+
+         // camera controls
+        var camControls = new THREE.OrbitControls(camera, renderer.domElement);
+        camControls.damping = 0.2;
+        camControls.addEventListener('change', render);
+
+         // window resize handler
+        window.addEventListener('resize', onWindowResize, false);
+
+        function onWindowResize() {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            render();
+        }
+
+        var axes = new THREE.AxisHelper(20);
+        //scene.add(axes);
+
+        var grid = new THREE.GridHelper(40, 1);
+
+         // create the ground plane
+        var planeGeometry = new THREE.PlaneGeometry(10, 10, 10, 10);
+        var planeMaterial = new THREE.MeshLambertMaterial({
+            color: 0xffffff
+        });
+        var plane = new THREE.Mesh(planeGeometry, planeMaterial);
+        plane.rotation.x = -0.5 * Math.PI;
+        plane.position.x = 0;
+        plane.position.y = -0.05;
+        plane.position.z = 0;
+        //scene.add(plane);
+
+         // ---- 3D CONTENT CREATION -----------------------------------------------------
+		var dae;
+        var loader = new THREE.ColladaLoader();
+        loader.options.convertUpAxis = true;
+        loader.load('assets/shuffle4g.dae', function (collada) {   
+            dae = collada.scene;
+            dae.position.set(0, 0, 0); //x,z,y- if you think in blender dimensions ;)
+            dae.scale.set(1, 1, 1);
+            scene.add(dae);
+            // console.log(dae); // for scene analysis
+            // Set trancpareny of window material (is shared with all glasses of car)
+            var object, child, objectBack, back;
+            object = dae.getObjectByName("Body");
+			objectBack = dae.getObjectByName("Back");
+			//console.log(objectBack);
+			back = objectBack.children[0];
+            child = object.children[0];
+			child.material.color.setHex(0x38ACEC);	
+			back.material.color.setHex(0x38ACEC);
+			var objectTuch = dae.getObjectByName("Tuch");
+				var tuch = objectTuch.children[0];
+				tuch.material.color.setHex(0xFF9000);
+            render();
+
+        });
+
+         // ---- END OF 3D CONTENT CREATION ---------------------------------------------
+		
+		document.addEventListener("keydown", onDocumentKeyDown, false);
+         // position and point the camera to the center of the scene
+        camera.position.x = -4.732239672416408;
+        camera.position.y =  7.2718572601647615;
+        camera.position.z = 8.584896990941212;
+        camera.lookAt(scene.position);
+
+		// add subtle ambient lighting
+        var ambientLight = new THREE.AmbientLight(0x111111);
+        scene.add(ambientLight);
+		
+
+         // add spotlight
+		var spotLight = new THREE.SpotLight(0xffffff,0.5);
+        spotLight.position.set(-80, 70, 90);
+        scene.add(spotLight);
+	
+         // add headlight
+        var headLight = new THREE.PointLight(0x888888, 0.5);
+        headLight.position.set(camera.position.x, camera.position.y, camera.position.z);
+        scene.add(headLight);
+		
+		// add directionalLight
+		var directionalLight = new THREE.DirectionalLight( 0xffffff, 0.5 );
+		directionalLight.position.set( 0, 1, 1 );
+		scene.add( directionalLight );
+
+         // add GUI control elements
+        var guiControls = new function () {
+			this.color = new THREE.Color();
+			this.animated = false;
+			this.table = false;
+        }
+
+        var gui = new dat.GUI();
+        var guiContainer = document.getElementById('gui-container');
+        guiContainer.appendChild(gui.domElement);
+		
+		gui.add(guiControls, 'color', {Cyan: 0x38ACEC, Green: 0x48CCCD, Yellow: 0xFFE87C, Red: 0xFF8040, Pink: 0xFCDFFF, Grey: 0xBCC6CC, Black: 0x625D5D}).onChange(function (e) {
+			var objectBody, body, objectBack, back;
+			objectBody = dae.getObjectByName("Body");
+			body=objectBody.children[0];
+			objectBack = dae.getObjectByName("Back");
+			back = objectBack.children[0];
+			
+			body.material.color.setHex(e);
+			back.material.color.setHex(e);
+			
+			//cyan
+			if(e == 0x38ACEC) {
+				var objectTuch = dae.getObjectByName("Tuch");
+				var tuch = objectTuch.children[0];
+				tuch.material.color.setHex(0xFF9000);
+			}
+			
+			//green
+			if(e == 0x48CCCD) {
+				var objectTuch = dae.getObjectByName("Tuch");
+				var tuch = objectTuch.children[0];
+				tuch.material.color.setHex(0xFF5F01);
+			}
+			
+			//yellow
+			if(e == 0xFFE87C) {
+				var objectTuch = dae.getObjectByName("Tuch");
+				var tuch = objectTuch.children[0];
+				tuch.material.color.setHex(0x0602FF);
+			}
+			
+			//red
+			if(e == 0xFF8040) {
+				var objectTuch = dae.getObjectByName("Tuch");
+				var tuch = objectTuch.children[0];
+				tuch.material.color.setHex(0x02FFEE);
+			}
+			
+			//pink
+			if(e == 0xFCDFFF) {
+				var objectTuch = dae.getObjectByName("Tuch");
+				var tuch = objectTuch.children[0];
+				tuch.material.color.setHex(0x78FF02);
+			}
+			
+			//grey
+			if(e == 0xBCC6CC) {
+				var objectTuch = dae.getObjectByName("Tuch");
+				var tuch = objectTuch.children[0];
+				tuch.material.color.setHex(0xFFFCF9);
+			}
+			
+			//black
+			if(e == 0x625D5D) {
+				var objectTuch = dae.getObjectByName("Tuch");
+				var tuch = objectTuch.children[0];
+				tuch.material.color.setHex(0xF8F8FF);
+			}
+			
+			render();
+		});
+				
+            
+/*    
+        gui.add(guiControls, 'asWireframes').onChange(function (e) {
+            asWireframes = e;
+            // TODO: for all material.wireframe = asWireframes;
+            cubeMaterial.wireframe = asWireframes;
+            render();
+        });
+*/
+
+         // init and call render function
+        function render() {
+            headLight.position.set(camera.position.x, camera.position.y, camera.position.z);
+            renderer.render(scene, camera);
+        }
+        initAnim(true); // no gui
+		initTable(true);
+        initShadow(false);
+        initFog(false);
+        render();
+        setShadow(false);
+        setFog(false);
+
+         // animate the 3D objects
+        function initAnim(value) {
+            if (value) {
+                gui.add(guiControls, 'animated').onChange(function (e) {
+                    animated = e;
+                    if (animated) animate();
+                });
+            }
+        }
+		
+		function initTable(value) {
+			if(value) {
+				gui.add(guiControls, 'table').onChange(function (e) {
+					table = e;
+					if(table) {
+						hideTable();
+					}
+					else {
+						appearTable();
+					}
+				});
+			}
+		}
+
+        var step = 0;
+        var scalingStep = 0;
+
+        function animate() {
+            if (guiControls.animated) {
+                // DO ANIMATING 3D ELEMENTS
+				var axis = new THREE.Vector3(0,1,0);
+				rotateAroundWorldAxis(dae, axis, 0.01);
+                requestAnimationFrame(animate);
+            }
+            render();
+        }
+		
+		function hideTable() {
+			if(guiControls.table) {
+				var tableObject, table, tuchObject, tuch;
+				tableObject = dae.getObjectByName("Table");
+				tableObject.visible =false;
+				tuchObject = dae.getObjectByName("Tuch");
+				tuchObject.visible = false; 	
+			}
+			render();
+		}
+		
+		function appearTable() {
+			var tableObject, table, tuchObject, tuch;
+			tableObject = dae.getObjectByName("Table");
+			tableObject.visible =true;
+			tuchObject = dae.getObjectByName("Tuch");
+			tuchObject.visible = true;
+			render();
+		}
+				
+
+         // shadow cast on plane
+        function initShadow(value) {
+            // SET receiveShadow AND castShadow FLAGS OF 3D ELEMENTS WITH SHADOW
+            plane.receiveShadow = value;
+            spotLight.castShadow = value;
+            renderer.shadowMapEnabled = value;
+            if (value) {
+                gui.add(guiControls, 'withShadow').onChange(function (e) {
+                    withShadow = e;
+                    setShadow(withShadow);
+                });
+            }
+        }
+
+        function setShadow(value) {
+            if (value) {
+                renderer.shadowMapAutoUpdate = true;
+            } else {
+                renderer.shadowMapAutoUpdate = false;
+                renderer.clearTarget(spotLight.shadowMap);
+            }
+            render();
+        }
+
+         // fog
+        var fog;
+
+        function initFog(value) {
+            if (value) {
+                fog = new THREE.Fog(0xeeeeee, 0.0000001, 150);
+                scene.fog = fog;
+                gui.add(guiControls, 'withFog').onChange(function (e) {
+                    withFog = e;
+                    setFog(withFog);
+                });
+            }
+        }
+
+        function setFog(value) {
+            if (!fog) return;
+            if (value) {
+                fog.near = 0.000000001;
+                fog.far = 150;
+            } else {
+                fog.near = 8000;
+                fog.far = 8000;
+            }
+            render();
+        }
+		
+		
+		//Rotation of the table
+		var rotWorldMatrix;
+		// Rotate an object around an arbitrary axis in world space       
+		function rotateAroundWorldAxis(object, axis, radians) {
+			rotWorldMatrix = new THREE.Matrix4();
+			rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
+
+			// old code for Three.JS pre r54:
+			//  rotWorldMatrix.multiply(object.matrix);
+			// new code for Three.JS r55+:
+			rotWorldMatrix.multiply(object.matrix);                // pre-multiply
+
+			object.matrix = rotWorldMatrix;
+
+			// old code for Three.js pre r49:
+			// object.rotation.getRotationFromMatrix(object.matrix, object.scale);
+			// old code for Three.js pre r59:
+			// object.rotation.setEulerFromRotationMatrix(object.matrix);
+			// code for r59+:
+			object.rotation.setFromRotationMatrix(object.matrix);
+		}
+		
+		function onDocumentKeyDown(event){
+			 var keyCode = event.which;
+			 
+			  if(keyCode == 70){
+				var axis = new THREE.Vector3(0,1,0);
+				rotateAroundWorldAxis(dae, axis, 0.01);
+				console.log("Wuhu");
+				render();
+			  }
+		}
+    </script>
+</div>
+
+</body>
+
+</html>
